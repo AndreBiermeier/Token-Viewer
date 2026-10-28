@@ -1,5 +1,7 @@
 """Controller for the tokenizer."""
 
+from jinja2 import TemplateError
+
 from token_viewer.controller import CommandError, Controller
 from token_viewer.model import TokenizerModel
 from token_viewer.view_models import (
@@ -79,8 +81,15 @@ class TokenController(Controller):
         return self.view_model()
 
     def set_messages(self, messages: list[Message]) -> ViewModel:
-        """Replace the chat messages whose tokens the views show."""
-        ...
+        """Process new messages and return their tokenization for display."""
+        message_data = [
+            {"role": message.role, "content": message.content} for message in messages
+        ]
+        try:
+            self.tokenizer.process_messages(message_data)
+        except (ValueError, TemplateError) as refusal:
+            raise CommandError(str(refusal)) from refusal
+        return self.view_model()
 
     def load_capture(self, name: str, content: str) -> ViewModel:
         """Read a captured provider response.

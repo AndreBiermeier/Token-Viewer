@@ -28,6 +28,21 @@ class TokenizerModel:
         self.rendered_text = None
         self.chat_encoding = None
 
+    def process_messages(self, messages: list[dict[str, str]]) -> None:
+        """Store, render and encode messages, restoring state if any step fails."""
+        previous_messages = self.messages
+        previous_text = self.rendered_text
+        previous_encoding = self.chat_encoding
+        try:
+            self.set_messages(messages)
+            self.render_chat()
+            self.encode_chat()
+        except Exception:
+            self.messages = previous_messages
+            self.rendered_text = previous_text
+            self.chat_encoding = previous_encoding
+            raise
+
     def load_tokenizer(
         self,
         repository: str,
