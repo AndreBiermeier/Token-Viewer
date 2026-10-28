@@ -233,9 +233,15 @@ async function firstLoad(): Promise<void> {
       try {
         const viewModel = await getViewModel()
         // Fill only empty fields: keep what the user typed in the meantime.
-        repositoryInput.value ||= viewModel.tokenizer?.repository ?? ''
-        revisionInput.value ||= viewModel.tokenizer?.revision ?? ''
-        messagesInput.value ||= JSON.stringify(viewModel.messages, null, 2)
+        repositoryInput.value ||=
+          viewModel.tokenizer?.repository ?? 'nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4'
+        revisionInput.value ||=
+          viewModel.tokenizer?.revision ?? 'bee7596271d1495f6992ae224aefde4410e816b8'
+        const messages: Message[] =
+          viewModel.messages.length > 0
+            ? viewModel.messages
+            : [{ role: 'user', content: 'Explain tokenization in one sentence.' }]
+        messagesInput.value ||= JSON.stringify(messages, null, 2)
         render(viewModel)
         showStatus(null)
         return
