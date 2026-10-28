@@ -22,9 +22,10 @@ class TokenizerModel:
         self.plain_text: str | None = None
         self.plain_encoding: Encoding | None = None
         self.current_sequence: str = "chat"
+        self.selected_index: int | None = None
 
     def set_messages(self, messages: list[dict[str, str]]) -> None:
-        """Replace the stored messages without rendering or tokenizing them."""
+        """Replace messages and clear their outdated results and selection."""
         if not messages:
             raise ValueError("Give at least one chat message.")
         self.messages = [message.copy() for message in messages]
@@ -32,6 +33,7 @@ class TokenizerModel:
         self.chat_encoding = None
         self.plain_text = None
         self.plain_encoding = None
+        self.selected_index = None
 
     def process_messages(self, messages: list[dict[str, str]]) -> None:
         """Store, render and encode messages, restoring state if any step fails."""
@@ -40,17 +42,19 @@ class TokenizerModel:
         previous_encoding = self.chat_encoding
         previous_plain_text = self.plain_text
         previous_plain_encoding = self.plain_encoding
+        previous_selection = self.selected_index
         try:
             self.set_messages(messages)
-            self.render_chat()
-            self.encode_chat()
-            self.encode_plain_text()
+            self._render_chat()
+            self._encode_chat()
+            self._encode_plain_text()
         except Exception:
             self.messages = previous_messages
             self.rendered_text = previous_text
             self.chat_encoding = previous_encoding
             self.plain_text = previous_plain_text
             self.plain_encoding = previous_plain_encoding
+            self.selected_index = previous_selection
             raise
 
     def load_tokenizer(
@@ -95,8 +99,9 @@ class TokenizerModel:
         self.chat_encoding = None
         self.plain_text = None
         self.plain_encoding = None
+        self.selected_index = None
 
-    def render_chat(self) -> str:
+    def _render_chat(self) -> str:
         """Store and return the chat text rendered from the current messages."""
         if self._chat_template is None:
             raise ValueError("Load a tokenizer before rendering chat messages.")
@@ -113,7 +118,7 @@ class TokenizerModel:
         self.chat_encoding = None
         return text
 
-    def encode_chat(self) -> Encoding:
+    def _encode_chat(self) -> Encoding:
         """Store and return the tokenization of the rendered chat text."""
         if self.rendered_text is None:
             raise ValueError("Render the chat before encoding it.")
@@ -125,7 +130,7 @@ class TokenizerModel:
         """Return token IDs, vocabulary entries and offsets for plain text."""
         return self._require_tokenizer().encode(text, add_special_tokens=False)
 
-    def encode_plain_text(self) -> Encoding:
+    def _encode_plain_text(self) -> Encoding:
         """Store content-only tokens, joining multiple messages with newlines."""
         if not self.messages:
             raise ValueError("Give at least one chat message.")
@@ -143,6 +148,23 @@ class TokenizerModel:
         if encoding is None:
             raise ValueError(f"Tokenize messages before selecting {key!r}.")
         self.current_sequence = key
+        self.selected_index = None
+
+    def select_token(self, index: int) -> None:
+        """Remember a valid token index in the currently selected sequence."""
+        encoding = (
+            self.plain_encoding
+            if self.current_sequence == "text"
+            else self.chat_encoding
+        )
+        if encoding is None:
+            raise ValueError("Tokenize messages before selecting a token.")
+        count = len(encoding.ids)
+        if not 0 <= index < count:
+            raise ValueError(
+                f"There is no token {index}: this sequence has {count} tokens."
+            )
+        self.selected_index = index
 
     def decode(self, token_ids: list[int]) -> str:
         """Decode token IDs into text, keeping any special tokens visible."""
