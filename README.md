@@ -38,11 +38,13 @@ npm run dev
 ```
 
 Open <http://localhost:5173>. The page now uses the real controller and starts
-with no model loaded. To show the course request:
+with no model loaded. Empty forms are prefilled with the course repository,
+pinned revision and message; these values remain editable. Existing backend
+values take precedence when available. To show the course request:
 
-1. Set **Repository** to `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4`.
-2. Set **Revision** to `bee7596271d1495f6992ae224aefde4410e816b8`, then click **Load model**.
-3. Enter the following under **Messages as JSON**, then click **Set messages**:
+1. Keep **Repository** as `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4`.
+2. Keep **Revision** as `bee7596271d1495f6992ae224aefde4410e816b8`, then click **Load model**.
+3. Keep the following under **Messages as JSON**, then click **Set messages**:
 
    ```json
    [{"role": "user", "content": "Explain tokenization in one sentence."}]
@@ -112,7 +114,25 @@ _Yours: short records of your decisions and their reasons: which files and which
 Starter: three questions are left open on purpose. Decide them, and record what you chose and why:
 
 - **Template switches.** No command and no view-model field carries the chat template's switches, such as thinking on or off, although the course request sets one. Where do they belong?
-- **Offsets.** `TokenView.start` and `TokenView.end` do not say what they count. Which unit do you choose?
+The switches belong to the model’s rendering configuration because they affect the template output and token sequence.
+
+- **Offsets and split characters.**
+ `TokenView.start` and `TokenView.end` do not say what they count. Which unit do you choose?
+
+ `TokenView.start` and `end` count Unicode code
+  points in the current sequence's source text, with an inclusive start and
+  exclusive end. 
+  Token ranges may overlap.
+  The controller groups consecutive overlapping ranges for display and decodes
+  each group's IDs together.
+  Every token remains a separate entry with its original ID and source offsets.
+  `group_start` and `group_end`
+  are token indexes (end exclusive), and `group_text` is the joint decoding.
+  Fragment chips show labels such as `[part 1/4 of '👋']`, rather than an
+  unexplained replacement character.
+  Example: `[{"role":"user","content":"Hello👋🏽!"}]`, select
+  **Text alone**, and click the emoji fragments to inspect their group fields.
+
 - **Capture metadata.** A capture is the file that [capture-nvidia-response](https://github.com/L3GJ0N/engineering_agentic_ai_systems_hs_aalen/tree/main/llm_inference#run-the-project) in the course repository writes. The task lists the metadata a capture should show. Which of them are the provider's statements, and which are your own local reconstruction? How do your views show the difference?
 
 ## 7. AI use

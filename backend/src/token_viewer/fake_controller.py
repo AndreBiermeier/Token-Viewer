@@ -178,9 +178,13 @@ class FakeController(Controller):
                 id=token_id,
                 piece=piece,
                 text=text,
+                decoded_text=text,
                 start=start,
                 end=end,
                 special=special,
+                group_start=index,
+                group_end=index + 1,
+                group_text=text,
             )
             for index, (token_id, piece, text, start, end, special) in enumerate(
                 model.tokens()

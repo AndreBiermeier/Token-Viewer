@@ -245,17 +245,22 @@ export interface components {
             piece: string;
             /**
              * Text
-             * @description The token's text, as the views show it.
+             * @description Display label: decoded text, or a part label for overlapping tokens.
              */
             text: string;
             /**
+             * Decoded Text
+             * @description This token decoded alone; incomplete UTF-8 may produce a replacement.
+             */
+            decoded_text: string;
+            /**
              * Start
-             * @description Where the token begins in the text of its view.
+             * @description Inclusive source offset in Unicode code points, as in Python str indexes.
              */
             start: number;
             /**
              * End
-             * @description Where the token ends in the text of its view.
+             * @description Exclusive source offset in Unicode code points; token ranges may overlap.
              */
             end: number;
             /**
@@ -263,6 +268,21 @@ export interface components {
              * @description Whether the token is a special token.
              */
             special: boolean;
+            /**
+             * Group Start
+             * @description Inclusive token index of this group of overlapping source ranges.
+             */
+            group_start: number;
+            /**
+             * Group End
+             * @description Exclusive token index of this group; a standalone token has a group of one.
+             */
+            group_end: number;
+            /**
+             * Group Text
+             * @description All token IDs in this group decoded together, keeping special tokens.
+             */
+            group_text: string;
         };
         /**
          * TokenizerView

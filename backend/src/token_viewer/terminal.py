@@ -10,7 +10,8 @@ from token_viewer.wiring import build_token_controller
 # The same repository, pinned revision and request as the course's token_lab.
 REPOSITORY = "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4"
 REVISION = "bee7596271d1495f6992ae224aefde4410e816b8"
-
+CONTENT_OPTIONS = {1: "Explain tokenization in one sentence.", 2: "Hello👋🏽!"}
+CONTENT = CONTENT_OPTIONS[2]
 
 def main() -> None:
     """Create the controller, submit the course request and display its result."""
@@ -21,7 +22,7 @@ def main() -> None:
     try:
         controller.load_model(REPOSITORY, REVISION)
         controller.set_messages(
-            [Message(role="user", content="Explain tokenization in one sentence.")]
+            [Message(role="user", content=CONTENT)]
         )
         chat = controller.select_view("chat")
         plain = controller.select_view("text")
@@ -39,13 +40,14 @@ def print_tokens(title: str, snapshot: ViewModel) -> None:
     print(snapshot.text)
     print(
         f"\n{'Index':>5}  {'ID':>6}  {'Vocabulary entry':<24}  "
-        f"{'Decoded text':<24}  Special"
+        f"{'Decoded text':<24}  {'Special':<7}  Display"
     )
     for token in snapshot.tokens:
         marker = "*" if token.special else ""
         print(
             f"{token.index:>5}  {token.id:>6}  "
-            f"{token.piece!r:<24}  {token.text!r:<24}  {marker}"
+            f"{token.piece!r:<24}  {token.decoded_text!r:<24}  "
+            f"{marker:<7}  {token.text!r}"
         )
     print("\n* = special token")
     print(f"\nToken count: {len(snapshot.tokens)}")

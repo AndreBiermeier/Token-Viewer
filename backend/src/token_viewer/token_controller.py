@@ -38,21 +38,7 @@ class TokenController(Controller):
             encoding = self.tokenizer.chat_encoding
         tokens: list[TokenView] = []
         if encoding is not None:
-            pieces = encoding.tokens
-            offsets = encoding.offsets
-            for index, token_id in enumerate(encoding.ids):
-                start, end = offsets[index]
-                tokens.append(
-                    TokenView(
-                        index=index,
-                        id=token_id,
-                        piece=pieces[index],
-                        text=self.tokenizer.decode([token_id]),
-                        start=start,
-                        end=end,
-                        special=self.tokenizer.is_special_token(token_id),
-                    )
-                )
+            tokens = self._token_views(encoding.ids, encoding.tokens, encoding.offsets)
 
         views: list[ViewOption] = []
         if self.tokenizer.rendered_text is not None:
@@ -71,6 +57,68 @@ class TokenController(Controller):
             selected=tokens[selected_index] if selected_index is not None else None,
             capture=None,
         )
+
+    def _token_views(
+        self, ids: list[int], pieces: list[str], offsets: list[tuple[int, int]]
+    ) -> list[TokenView]:
+        """Explain overlapping source ranges while preserving every token."""
+        tokens: list[TokenView] = []
+        group_start = 0
+        while group_start < len(ids):
+            group_end = group_start + 1
+            source_start, source_end = offsets[group_start]
+            while group_end < len(ids):
+                next_start, next_end = offsets[group_end]
+                # Join overlapping ranges, including overlaps that extend the
+                # group.
+                # Example of a possible byte-level split of "éö":
+                #   Characters:       é        ö
+                #   UTF-8 bytes:      C3 A9    C3 B6
+                #   Token bytes:     [C3] [A9 C3] [B6]
+                #   Source ranges:   (0,1) (0,2) (1,2)
+                # The middle token overlaps both characters. Adding it grows
+                # the group's range to (0,2), so the last token joins too.
+                if not (
+                    source_start < source_end
+                    and next_start < next_end
+                    and next_start < source_end
+                    and source_start < next_end
+                ):
+                    break
+                source_start = min(source_start, next_start)
+                source_end = max(source_end, next_end)
+                group_end += 1
+
+            group_text = self.tokenizer.decode(ids[group_start:group_end])
+            group_size = group_end - group_start
+            for index in range(group_start, group_end):
+                decoded = (
+                    group_text
+                    if group_size == 1
+                    else self.tokenizer.decode([ids[index]])
+                )
+                label = decoded
+                if group_size > 1:
+                    part = index - group_start + 1
+                    label = f"[part {part}/{group_size} of {group_text!r}]"
+                start, end = offsets[index]
+                tokens.append(
+                    TokenView(
+                        index=index,
+                        id=ids[index],
+                        piece=pieces[index],
+                        text=label,
+                        decoded_text=decoded,
+                        start=start,
+                        end=end,
+                        special=self.tokenizer.is_special_token(ids[index]),
+                        group_start=group_start,
+                        group_end=group_end,
+                        group_text=group_text,
+                    )
+                )
+            group_start = group_end
+        return tokens
 
     def load_model(self, repository: str, revision: str) -> ViewModel:
         """Use the tokenizer and chat template of a model repository.

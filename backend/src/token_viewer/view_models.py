@@ -56,15 +56,21 @@ class TokenView(BaseModel):
     piece: str
     """The vocabulary entry for this ID."""
     text: str
-    """The token's text, as the views show it."""
-    # Yours: decide what start and end count, and say so in their docstrings
-    # (README.md, section 6).
+    """Display label: decoded text, or a part label for overlapping tokens."""
+    decoded_text: str
+    """This token decoded alone; incomplete UTF-8 may produce a replacement."""
     start: int
-    """Where the token begins in the text of its view."""
+    """Inclusive source offset in Unicode code points, as in Python str indexes."""
     end: int
-    """Where the token ends in the text of its view."""
+    """Exclusive source offset in Unicode code points; token ranges may overlap."""
     special: bool
     """Whether the token is a special token."""
+    group_start: int
+    """Inclusive token index of this group of overlapping source ranges."""
+    group_end: int
+    """Exclusive token index of this group; a standalone token has a group of one."""
+    group_text: str
+    """All token IDs in this group decoded together, keeping special tokens."""
 
 
 class TokenizerView(BaseModel):
