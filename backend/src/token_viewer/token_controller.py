@@ -59,6 +59,7 @@ class TokenController(Controller):
             views.append(ViewOption(key="chat", title="Chat, after the template"))
         if self.tokenizer.plain_text is not None:
             views.append(ViewOption(key="text", title="Text alone"))
+        selected_index = self.tokenizer.selected_index
         return ViewModel(
             tokenizer=tokenizer,
             notice=None,
@@ -67,7 +68,7 @@ class TokenController(Controller):
             current_view=self.tokenizer.current_sequence if text is not None else None,
             text=text if text is not None else "",
             tokens=tokens,
-            selected=None,
+            selected=tokens[selected_index] if selected_index is not None else None,
             capture=None,
         )
 
@@ -99,14 +100,14 @@ class TokenController(Controller):
         return self.view_model()
 
     def load_capture(self, name: str, content: str) -> ViewModel:
-        """Read a captured provider response.
+        """Refuse capture loading until the capture deliverable is implemented.
 
         Args:
             name: The capture file's name, for display.
             content: The file's content: JSON text, as capture-nvidia-response
                 writes it.
         """
-        ...
+        raise CommandError("Capture loading is not implemented yet.")
 
     def select_view(self, key: str) -> ViewModel:
         """Show the tokens of one view, e.g. "chat"."""
@@ -118,4 +119,8 @@ class TokenController(Controller):
 
     def select_token(self, index: int) -> ViewModel:
         """Select one token of the current view."""
-        ...
+        try:
+            self.tokenizer.select_token(index)
+        except ValueError as refusal:
+            raise CommandError(str(refusal)) from refusal
+        return self.view_model()

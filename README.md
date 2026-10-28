@@ -37,7 +37,17 @@ npm ci
 npm run dev
 ```
 
-Open <http://localhost:5173>. Starter: the page shows the fake controller's made-up tokens; [GUIDE.md](GUIDE.md#try-the-starter) says what to try first.
+Open <http://localhost:5173>. The page now uses the real controller and starts
+with no model loaded. To show the course request:
+
+1. Set **Repository** to `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4`.
+2. Set **Revision** to `bee7596271d1495f6992ae224aefde4410e816b8`, then click **Load model**.
+3. Enter the following under **Messages as JSON**, then click **Set messages**:
+
+   ```json
+   [{"role": "user", "content": "Explain tokenization in one sentence."}]
+   ```
+
 
 Terminal View:
 
