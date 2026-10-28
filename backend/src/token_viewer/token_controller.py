@@ -30,7 +30,12 @@ class TokenController(Controller):
         if repository is not None and revision is not None:
             tokenizer = TokenizerView(repository=repository, revision=revision)
 
-        encoding = self.tokenizer.chat_encoding
+        if self.tokenizer.current_sequence == "text":
+            text = self.tokenizer.plain_text
+            encoding = self.tokenizer.plain_encoding
+        else:
+            text = self.tokenizer.rendered_text
+            encoding = self.tokenizer.chat_encoding
         tokens: list[TokenView] = []
         if encoding is not None:
             pieces = encoding.tokens
@@ -49,16 +54,18 @@ class TokenController(Controller):
                     )
                 )
 
-        rendered_text = self.tokenizer.rendered_text
+        views: list[ViewOption] = []
+        if self.tokenizer.rendered_text is not None:
+            views.append(ViewOption(key="chat", title="Chat, after the template"))
+        if self.tokenizer.plain_text is not None:
+            views.append(ViewOption(key="text", title="Text alone"))
         return ViewModel(
             tokenizer=tokenizer,
             notice=None,
             messages=[Message(**message) for message in self.tokenizer.messages],
-            views=[ViewOption(key="chat", title="Chat, after the template")]
-            if rendered_text is not None
-            else [],
-            current_view="chat" if rendered_text is not None else None,
-            text=rendered_text if rendered_text is not None else "",
+            views=views,
+            current_view=self.tokenizer.current_sequence if text is not None else None,
+            text=text if text is not None else "",
             tokens=tokens,
             selected=None,
             capture=None,
@@ -103,7 +110,11 @@ class TokenController(Controller):
 
     def select_view(self, key: str) -> ViewModel:
         """Show the tokens of one view, e.g. "chat"."""
-        ...
+        try:
+            self.tokenizer.select_sequence(key)
+        except ValueError as refusal:
+            raise CommandError(str(refusal)) from refusal
+        return self.view_model()
 
     def select_token(self, index: int) -> ViewModel:
         """Select one token of the current view."""

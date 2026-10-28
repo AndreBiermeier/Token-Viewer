@@ -1,12 +1,20 @@
-"""Which controller the views use: the one place to plug in your own.
+"""Assemble controllers and models for the application's entry points.
 
-The web back end and a terminal view each run in a process of their own. Each
-calls build_controller() once, so both use the same classes, each with its own
-state.
+The web back end and terminal run in separate processes with separate state.
+The terminal uses the real controller; the page still uses the fake until
+the remaining browser commands are implemented.
 """
 
 from token_viewer.controller import Controller
 from token_viewer.fake_controller import FakeController
+from token_viewer.model import TokenizerModel
+from token_viewer.token_controller import TokenController
+
+
+def build_token_controller() -> Controller:
+    """Create a real controller with a fresh, unloaded tokenizer model."""
+    model = TokenizerModel()
+    return TokenController(model)
 
 
 def build_controller() -> Controller:

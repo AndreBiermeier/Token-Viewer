@@ -39,7 +39,19 @@ npm run dev
 
 Open <http://localhost:5173>. Starter: the page shows the fake controller's made-up tokens; [GUIDE.md](GUIDE.md#try-the-starter) says what to try first.
 
-The terminal view: _yours, the command that starts it._
+Terminal View:
+
+```console
+cd backend
+uv run token-viewer
+```
+
+It prints two sequences using the real controller: the chat after its template
+(24 tokens for the course request) and the message text alone (8 tokens).
+Each has its text, token count and a table with each token's index, ID, vocabulary
+entry, decoded text and special-token marker. Quoted table values make spaces
+and newlines visible. For multiple messages, plain text joins their contents with
+newlines, without role labels or template markers.
 
 The tests and checks: see [Checks](#checks).
 

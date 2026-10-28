@@ -19,6 +19,9 @@ class TokenizerModel:
         self.messages: list[dict[str, str]] = []
         self.rendered_text: str | None = None
         self.chat_encoding: Encoding | None = None
+        self.plain_text: str | None = None
+        self.plain_encoding: Encoding | None = None
+        self.current_sequence: str = "chat"
 
     def set_messages(self, messages: list[dict[str, str]]) -> None:
         """Replace the stored messages without rendering or tokenizing them."""
@@ -27,20 +30,27 @@ class TokenizerModel:
         self.messages = [message.copy() for message in messages]
         self.rendered_text = None
         self.chat_encoding = None
+        self.plain_text = None
+        self.plain_encoding = None
 
     def process_messages(self, messages: list[dict[str, str]]) -> None:
         """Store, render and encode messages, restoring state if any step fails."""
         previous_messages = self.messages
         previous_text = self.rendered_text
         previous_encoding = self.chat_encoding
+        previous_plain_text = self.plain_text
+        previous_plain_encoding = self.plain_encoding
         try:
             self.set_messages(messages)
             self.render_chat()
             self.encode_chat()
+            self.encode_plain_text()
         except Exception:
             self.messages = previous_messages
             self.rendered_text = previous_text
             self.chat_encoding = previous_encoding
+            self.plain_text = previous_plain_text
+            self.plain_encoding = previous_plain_encoding
             raise
 
     def load_tokenizer(
@@ -83,6 +93,8 @@ class TokenizerModel:
         self.revision = revision
         self.rendered_text = None
         self.chat_encoding = None
+        self.plain_text = None
+        self.plain_encoding = None
 
     def render_chat(self) -> str:
         """Store and return the chat text rendered from the current messages."""
@@ -112,6 +124,25 @@ class TokenizerModel:
     def encode(self, text: str) -> Encoding:
         """Return token IDs, vocabulary entries and offsets for plain text."""
         return self._require_tokenizer().encode(text, add_special_tokens=False)
+
+    def encode_plain_text(self) -> Encoding:
+        """Store content-only tokens, joining multiple messages with newlines."""
+        if not self.messages:
+            raise ValueError("Give at least one chat message.")
+        text = "\n".join(message["content"] for message in self.messages)
+        encoding = self.encode(text)
+        self.plain_text = text
+        self.plain_encoding = encoding
+        return encoding
+
+    def select_sequence(self, key: str) -> None:
+        """Choose an existing chat or plain-text tokenization result."""
+        if key not in {"chat", "text"}:
+            raise ValueError(f"There is no sequence {key!r}.")
+        encoding = self.chat_encoding if key == "chat" else self.plain_encoding
+        if encoding is None:
+            raise ValueError(f"Tokenize messages before selecting {key!r}.")
+        self.current_sequence = key
 
     def decode(self, token_ids: list[int]) -> str:
         """Decode token IDs into text, keeping any special tokens visible."""
