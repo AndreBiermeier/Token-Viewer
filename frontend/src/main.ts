@@ -131,10 +131,17 @@ function render(viewModel: ViewModel): void {
   moreText.textContent = JSON.stringify(moreFields, null, 2)
 }
 
+function tokenColor(id: number): string {
+  const hue = (id * 137.508) % 360
+  return `hsl(${hue}, 65%, 85%)`
+}
+
 function chip(token: TokenView, selected: TokenView | null): HTMLSpanElement {
   const isSelected = token.index === selected?.index
   const span = document.createElement('span')
   span.className = 'chip'
+  span.style.backgroundColor = tokenColor(token.id)
+  span.style.color = '#120e0e'
   span.classList.toggle('special', token.special)
   span.classList.toggle('selected', isSelected)
   span.textContent = token.text
