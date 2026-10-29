@@ -61,7 +61,7 @@ class TokenController(Controller):
     def _token_views(
         self, ids: list[int], pieces: list[str], offsets: list[tuple[int, int]]
     ) -> list[TokenView]:
-        """Explain overlapping source ranges while preserving every token."""
+        """Overlapping source ranges while preserving every token."""
         tokens: list[TokenView] = []
         group_start = 0
         while group_start < len(ids):

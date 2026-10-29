@@ -75,11 +75,32 @@ While you develop, the page and the back end run in separate processes:
 flowchart LR
     B["Browser: the page"] -->|"HTTP, localhost:5173"| V["Vite dev server: Node.js"]
     V -->|"/api, 127.0.0.1:8000"| U["uvicorn: routes, controller, model"]
+    U -->|"Load model: download model files"| HF["Hugging Face"]
+    HF -->|"model files"| C["Local Hugging Face cache"]
+    U -. "reads cached files" .-> C
+    T["Terminal view: separate Python process"] --> TC["Its own controller and model"]
+    DB["Backend debugger"] -. "attaches to" .-> U
+    BD["Browser debugger"] -. "attaches to" .-> B
 ```
 
 Vite's proxy passes every request under `/api` on to uvicorn, so the page and the API share one origin and need no CORS.
 
 _Yours: complete the map and explain it._ Where do the model's files come from, and when? Where does the terminal view run? Which process holds the state, and what happens to it when uvicorn restarts? Which process does each debugger attach to?
+
+### 2.1. Where and when do the model files come from?
+They are downloaded from Hugging Face when the user clicks "Load model". After that, they are stored in the local cache.
+
+### 2.2. Where does the terminal view run?
+As a separate Python process started in the backend terminal.
+
+### 2.3. Where is the state stored?
+Each running instance has its own controller and model. So the web server and the terminal view don't share the same state in memory.
+
+### 2.4. What happens when uvicorn restarts?
+The state in memory is lost, and the model needs to be loaded again. The downloaded model files stay in the Hugging Face cache.
+
+### 2.5 What are the debuggers attached to?
+The backend debugger is attached to the Python/uvicorn process, while the browser debugger runs on the browser side. Vite runs as a separate Node.js process.
 
 ## 3. Debugging
 
@@ -106,6 +127,8 @@ _Yours: what works, in the order of the task sheet, and the steps that show it._
 Starter: [GUIDE.md](GUIDE.md#the-contract) explains the contract between the view-models and the page, and the two meanings of model and view.
 
 _Yours: your view-model, where the state lives, and the change that put the page on your controller: `wiring.py` only, with no change to the model or the controller._
+
+
 
 ## 6. Decisions
 
